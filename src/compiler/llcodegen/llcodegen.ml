@@ -64,6 +64,16 @@ let rec cgExp (ctxt : context) (Exp {exp_base; ty; _} : H.exp) :
       let bop =
         match oper with 
           PlusOp -> Ll.Add 
+        | MinusOp -> Ll.Sub
+        | TimesOp -> Ll.Mul
+        | DivideOp -> Ll.SDiv
+        | ExponentOp -> Ll.Shl
+        | EqOp -> raise NotImplemented
+        | NeqOp -> raise NotImplemented
+        | LtOp -> raise NotImplemented
+        | LeOp -> raise NotImplemented
+        | GtOp -> raise NotImplemented
+        | GeOp -> raise NotImplemented
         | _ -> raise NotImplemented
       in
       let i = Ll.Binop (bop, Ll.I64, op_left, op_right) in
