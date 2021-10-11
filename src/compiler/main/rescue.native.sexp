@@ -1,0 +1,1 @@
+(:standard -I ../../rescue/lexer/Linux -I ../../rescue/parser/Linux ../../rescue/lexer/Linux/tigerlexer__Lexer.cmx ../../rescue/parser/Linux/tigerparser__ParserAux.cmx ../../rescue/parser/Linux/tigerparser__Parser.cmx -w -31)
