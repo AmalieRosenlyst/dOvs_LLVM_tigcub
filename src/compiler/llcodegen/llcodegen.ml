@@ -35,6 +35,8 @@ let aiwf s i =
   let t = fresh s in
   (B.add_insn (Some t, i), Ll.Id t)
 
+(* --- Our selfmade helper functions --- *)
+
 (* --- end of helper functions --- *)
 
 (* Mapping Tiger built-in types to LLVM types *)
@@ -63,12 +65,12 @@ let rec cgExp (ctxt : context) (Exp {exp_base; ty; _} : H.exp) :
       let build_left, op_left = cgE left in
       let bop =
         match oper with 
-          PlusOp -> Ll.Add 
+          PlusOp -> Ll.Add
         | MinusOp -> Ll.Sub
         | TimesOp -> Ll.Mul
         | DivideOp -> Ll.SDiv
-        | ExponentOp -> Ll.Shl
-        | EqOp -> raise NotImplemented
+        | ExponentOp -> raise NotImplemented  (* hvad der skal ske afhænger af right operand, brug runtime.c *)
+        | EqOp -> raise NotImplemented       (* sub b a => icmp c 0 *)
         | NeqOp -> raise NotImplemented
         | LtOp -> raise NotImplemented
         | LeOp -> raise NotImplemented
@@ -76,6 +78,11 @@ let rec cgExp (ctxt : context) (Exp {exp_base; ty; _} : H.exp) :
         | GeOp -> raise NotImplemented
         | _ -> raise NotImplemented
       in
+      (* let thingy = 
+        match bop with
+        | Ll.bop -> raise NotImplemented
+        | Ll.cnd -> raise NotImplemented
+       in *)
       let i = Ll.Binop (bop, Ll.I64, op_left, op_right) in
       let newid = fresh "temp" in
       let b_insn = B.add_insn (Some newid, i) in
@@ -85,7 +92,28 @@ let rec cgExp (ctxt : context) (Exp {exp_base; ty; _} : H.exp) :
       (* lvl_diff returned from the hoisting phase for Tiger Cub is always zero *)
       raise NotImplemented
   | H.SeqExp exps -> raise NotImplemented
-  | H.IfExp {test; thn; els= Some e} -> raise NotImplemented
+  | H.IfExp {test; thn; els= Some e} -> 
+      (* Generate code for test *)
+      let (guard_buildlet, guard_op) = cgE test in
+      let (then_buildlet, then_op) = cgE thn in
+      let (else_buildlet, else_op) = cgE e in
+      
+      let label1 = fresh "basic" in
+      let basic_b = B.start_block label1 in
+
+      (* let B.term_block in *)
+
+      let id_alloc = fresh "alloc" in
+      let alloc = B.add_alloca(id_alloc, ty_to_llty ty) in 
+      (* let conb = B.add_insn() *)
+      (* add conditional branch that jumpt to either then or else *)
+      let label2 = fresh "then" in
+      let then_b = B.start_block(label2) in
+
+      let label3 = fresh "else" in
+      let else_b = B.start_block(label3) in 
+      (then_buildlet, then_op)
+      (* Skal vi terminere alle de blocks vi har lavet??? *)
   | H.WhileExp {test; body} -> raise NotImplemented
   | H.LetExp {vardecl= VarDec {name; typ; init; _}; body; _} ->
       raise NotImplemented

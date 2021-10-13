@@ -250,6 +250,10 @@ void tigerexit(void *static_link, int64_t code)
 
 int64_t exponent(int64_t base, int64_t expn)
 {
+  int64_t i
+  for(i=0; i<expn; i++){
+
+  }
   fprintf(stderr, "Error: exponent not yet implemented\n");
   exit(1);
   return 0; /* keeping gcc happy */

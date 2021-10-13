@@ -139,7 +139,7 @@ let string_of_bop (b: bop): string =
   match b with
       Add -> "add" | Sub  -> "sub"  | Mul -> "mul"   |
       Shl -> "shl" | Lshr -> "lshr" | Ashr -> "ashr" |
-      And -> "and" | Or   -> "or"   | Xor -> "xor"  | SDiv -> "sdiv"
+      And -> "and" | Or   -> "or"   | Xor -> "xor"   | SDiv -> "sdiv"
 
 let string_of_cnd (c:cnd): string =
     match c with

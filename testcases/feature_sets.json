@@ -128,5 +128,7 @@
   {"file": "pos/interactive/test7.tig", "feature-sets": ["lex0", "lex1", "lex2", "llvm0", "llvm1", "par0", "par1", "sem0", "sem1", "xasm1", "xasm2", "xasm3"]},
   {"file": "pos/interactive/test70.tig", "feature-sets": ["lex0", "lex1", "llvm0", "par0", "sem0", "xasm1", "xasm2", "xasm3"]},
   {"file": "pos/interactive/test71.tig", "feature-sets": ["lex0", "lex1", "llvm0", "llvm3", "par0", "sem0", "sem3", "xasm1", "xasm2", "xasm3"]},
-  {"file": "pos/interactive/thematrix.tig", "feature-sets": ["lex0", "lex1", "lex2", "llvm0", "llvm1", "llvm2", "llvm3", "llvm4", "par0", "par1", "par2", "sem0", "sem1", "sem2", "sem3", "xasm1", "xasm2", "xasm3"]}
+  {"file": "pos/interactive/thematrix.tig", "feature-sets": ["lex0", "lex1", "lex2", "llvm0", "llvm1", "llvm2", "llvm3", "llvm4", "par0", "par1", "par2", "sem0", "sem1", "sem2", "sem3", "xasm1", "xasm2", "xasm3"]},
+  {"file": "pos/batch/OurTests/if-exp.tig", "feature-sets": ["lex0", "lex1", "lex2", "llvm0", "llvm1", "llvm2", "llvm3", "llvm4", "par0", "par1", "par2", "sem0", "sem1", "sem2", "sem3", "xasm1", "xasm2", "xasm3"]}
+  
 ]
