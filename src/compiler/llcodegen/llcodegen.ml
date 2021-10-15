@@ -143,8 +143,8 @@ let rec cgExp (ctxt : context) (Exp {exp_base; ty; _} : H.exp) :
       let else_b = B.start_block(label3) in 
       let else_res = Store (ty_to_llty ty, else_op, res_op) in
       let else_res_ins = B.add_insn (None, else_res) in
-      let else_br = Br(merge_label) in 
-      let term3 = B.term_block(else_br) in
+      let else_br = Br(merge_label) in (* kan slettes, laves også i forrige block*)
+      let term3 = B.term_block(else_br) in (* same goes here :'( *)
       let e_buildlet = B.seq_buildlets [t_buildlet; else_b; else_buildlet; else_res_ins; term3] in
 
       let merge_b = B.start_block(merge_label) in 
