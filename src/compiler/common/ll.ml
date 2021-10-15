@@ -31,8 +31,7 @@ type operand
   | Const of int    (* integer constant    *)
   | Gid of gid      (* A global identifier *)
   | Id of uid       (* A local identifier  *)
-
-
+  
 
 (* Binary operations *)
 type bop = Add | Sub | Mul | SDiv | Shl | Lshr | Ashr | And | Or | Xor
