@@ -221,27 +221,27 @@ let rec cgExp (ctxt : context) (Exp {exp_base; ty; _} : H.exp) :
     
   | H.VarExp v -> cgVar ctxt v
   | H.AssignExp
-      {var= Var {var_base= H.AccessVar (0, varname); ty= varty; _}; exp} ->
+      {var= Var {var_base= H.AccessVar (0, varname); ty= varty; pos}; exp} ->
       (* first argument of the AccessVar is always zero in Tiger Cub *)
       let (exp_build, exp_op) = cgE exp in (
-        (* let (var_build, var_op) = cgVar ctxt H.var{var_base;ty} in  *)
+        let (var_build, var_op) = cgVar ctxt (H.Var{var_base=H.AccessVar (0, varname);ty = varty;pos}) in 
 
 
         let x_typ = ty_to_llty varty in
-        let x_ptr = varname in            
-        let x_ptr_op = Ll.Id x_ptr in   
+        (* let x_ptr = varname in             *)
+        (* let x_ptr_op = Ll.Id x_ptr in    *)
 
         (* we want to store exp_op in the var *)
-        let store_ins = Ll.Store(x_typ, exp_op, x_ptr_op) in 
+        let store_ins = Ll.Store(x_typ, exp_op, var_op) in 
         let store_build = B.add_insn(None, store_ins) in
 
 
-        let composed = B.seq_buildlets[exp_build; store_build] in
-        ()
-      );
+        let composed = B.seq_buildlets[var_build; exp_build; store_build] in
+        (composed, Null))
+      (* );
 
 
-      raise NotImplemented
+      raise NotImplemented *)
   (* the rest of the cases do not need handling in LLVM0/ Assignment 4 *)
   | _ -> raise NotLLVM0
 
@@ -275,6 +275,8 @@ let cgTigerMain ty body locals =
   let tr =
     match ty with
     | Ty.INT -> Ll.Ret (Ll.I64, Some op) (* TODO add types *)
+    | Ty.VOID -> Ll.Ret (Ll.Void, None)
+    (* | Ty.STRING -> Ll.Ret (Ll.Struct eehh, Some op) *)
     | _ -> raise NotImplemented
   in
   let tigermain_builder = B.seq_buildlets [build_body; B.term_block tr] in
