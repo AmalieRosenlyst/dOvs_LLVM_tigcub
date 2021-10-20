@@ -5,6 +5,7 @@
 
 open Tigercommon
 open Tigerhoist
+open String (* TODO: are we allowed to use this module ? *)
 
 (* Module aliases *)
 module H = Habsyn
@@ -66,7 +67,39 @@ let rec cgExp (ctxt : context) (Exp {exp_base; ty; _} : H.exp) :
   let open Ll in
   match exp_base with
   | H.IntExp n -> (B.id_buildlet, Ll.Const n)
-  | H.StringExp s -> raise NotImplemented
+  | H.StringExp s -> 
+      let length_of_str = length s in 
+      let arr_of_chars = 
+      let rec string_to_list acc i = 
+        if i < 0 then acc else string_to_list (s.[i]::acc) (i-1) in 
+          string_to_list [] (length_of_str-1) 
+      in
+      (* make actual list *)
+      
+      let string_array = Array (length_of_str, I8) in 
+      let str_struct = Struct ([I64; string_array]) in 
+      
+      let alloc_str = Alloca str_struct in (* TODO: Should the allocation happen in the first block or? *)
+      let alloc_id = fresh "string_alloc" in
+      let alloc_str_isn = B.add_alloca (alloc_id, I8) in 
+      
+      
+      let ar_isn = "no" in
+
+      (* let yes = string_to_list s in   Here should the result be *)
+
+
+      (* add instr to make it add  *)
+      
+
+      (* find length of list *)
+
+      (* tilføj til globals i context *)
+
+      (* Convert fra {i64, [n x i8]}* til i8* vha. bitcast *)
+      
+       
+      raise NotImplemented
   | H.OpExp {left; oper; right} ->
       let build_right, op_right = cgE right in
       let build_left, op_left = cgE left in (
@@ -76,8 +109,8 @@ let rec cgExp (ctxt : context) (Exp {exp_base; ty; _} : H.exp) :
           | PlusOp -> Ll.Add
           | MinusOp -> Ll.Sub
           | TimesOp -> Ll.Mul
-          | DivideOp -> Ll.SDiv (* Giver problemer med divison med 0 *)
-          | ExponentOp -> raise NotImplemented 
+          | DivideOp -> Ll.SDiv (* TODO: Giver problemer med divison med 0 *)
+          | ExponentOp -> raise NotImplemented (* TODO: Kobl den med funktionen i runtime.c *)
           | _ -> raise NotImplemented) 
         in (* hvad der skal ske afhænger af right operand, brug runtime.c *)
               let i = Ll.Binop (bion, Ll.I64, op_left, op_right) in
@@ -155,7 +188,7 @@ let rec cgExp (ctxt : context) (Exp {exp_base; ty; _} : H.exp) :
       (if_buildlet, load_op) 
   | H.WhileExp {test; body} -> 
     let (test_buildlet, test_op) = cgE test in 
-    let (body_buildlet, body_op) = cgE body in 
+    let (body_buildlet, _) = cgE body in (* TODO: Body operand skal ikke bruges, eller ? *)
     
       (*need to: branch on test to body or return
         in body: do some computation, update som variables, do not alloc everytime
@@ -224,15 +257,17 @@ let rec cgExp (ctxt : context) (Exp {exp_base; ty; _} : H.exp) :
       {var= Var {var_base= H.AccessVar (0, varname); ty= varty; pos}; exp} ->
       (* first argument of the AccessVar is always zero in Tiger Cub *)
       let (exp_build, exp_op) = cgE exp in (
-        let (var_build, var_op) = cgVar ctxt (H.Var{var_base=H.AccessVar (0, varname);ty = varty;pos}) in 
+        let (var_build, _) = cgVar ctxt (H.Var{var_base=H.AccessVar (0, varname);ty = varty;pos}) in 
 
 
         let x_typ = ty_to_llty varty in
         (* let x_ptr = varname in             *)
         (* let x_ptr_op = Ll.Id x_ptr in    *)
 
+        (* let con_x = S.look(ctxt.locals, varname) in *)
+
         (* we want to store exp_op in the var *)
-        let store_ins = Ll.Store(x_typ, exp_op, var_op) in 
+        let store_ins = Ll.Store(x_typ, exp_op, Id varname) in  (* operand er ændret fra var_op til Id varname - Amalie*)
         let store_build = B.add_insn(None, store_ins) in
 
 
