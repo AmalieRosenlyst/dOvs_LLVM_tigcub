@@ -68,6 +68,8 @@ let rec cgExp (ctxt : context) (Exp {exp_base; ty; _} : H.exp) :
   match exp_base with
   | H.IntExp n -> (B.id_buildlet, Ll.Const n)
   | H.StringExp s -> 
+      let string_id = fresh "string" in 
+      
       let length_of_str = length s in 
       let arr_of_chars = 
       let rec string_to_list acc i = 
@@ -75,31 +77,49 @@ let rec cgExp (ctxt : context) (Exp {exp_base; ty; _} : H.exp) :
           string_to_list [] (length_of_str-1) 
       in
       (* make actual list *)
-      
-      let string_array = Array (length_of_str, I8) in 
-      let str_struct = Struct ([I64; string_array]) in 
-      
-      let alloc_str = Alloca str_struct in (* TODO: Should the allocation happen in the first block or? *)
-      let alloc_id = fresh "string_alloc" in
-      let alloc_str_isn = B.add_alloca (alloc_id, I8) in 
-      
-      
-      let ar_isn = "no" in
 
-      (* let yes = string_to_list s in   Here should the result be *)
-
-
+      let str_arr_ty = Array (length_of_str, I8) in         (* [ n x i8] - this is a type*)
+      let str_struct_ty = Struct ([I64; str_arr_ty]) in     (* { i64, [n x i8] } - this is a type *)
+      let str_decl = GString s in 
+      let arr_decl = GArray [(str_arr_ty, str_decl)] in     (* This is a ginit with type from above*)
+      let str_decl = GStruct [(I64, GInt length_of_str); (str_arr_ty, str_decl)] in (* TODO: type should be different I guess *)
+      let new_gdecl = (str_struct_ty, str_decl) in  (* This is the first { ... } after gloabl *)
+      ctxt.gdecls := (string_id, new_gdecl) :: !(ctxt.gdecls); (* TODO: How to append to existing context, tror det her virker *)
+      
+      let str_op = Gid string_id in
+      let ptr_bitc = Bitcast (Ptr str_struct_ty, str_op, ptr_i8) in
+      let add_bc = B.add_insn (Some string_id, ptr_bitc) in 
+      let str_build = B.seq_buildlets [add_bc] in 
+      (str_build, Id string_id)
+      
+      (* let alloc_build = B.seq_buildlets([alloc_str_isn]) in
+      let str_load = Load (I8, Gid s) in  *) (* TODO: rip *)
       (* add instr to make it add  *)
-      
-
       (* find length of list *)
-
       (* tilføj til globals i context *)
-
       (* Convert fra {i64, [n x i8]}* til i8* vha. bitcast *)
+      (* let new_ginit = GString s in 
+
+      let ar_init = GArray ([I8, new_ginit]) in 
+      let str_init = GStruct ([I64, ar_init]) in  
+
+      let new_gdecl = (I8, new_ginit) in 
+      let new_gid = fresh "global" in (* This should not be done*)
+      let new_gop = Gid new_gid in
       
+      let extended = {ctxt with gdecls = (ref [new_gid, new_gdecl])} in (* TODO: Hvornår (og hvordan) fuck bruges man den her ? *)
+
+      let comment1 = Comment "Jeg er i string exp" in
+
+      (* let str_load = Load (I8, Gid new_gid) in   
+      let temp_reg = fresh "temp" in *)
+      let add_load = B.add_insn (Some temp_reg, str_load) in (* bitcast *)
+
+      let add_com = B.add_insn (None, comment1) in
+      let res = B.seq_buildlets [add_com; add_load] in
        
-      raise NotImplemented
+      (res, Null) *)
+      (* raise NotImplemented *)
   | H.OpExp {left; oper; right} ->
       let build_right, op_right = cgE right in
       let build_left, op_left = cgE left in (
@@ -128,7 +148,20 @@ let rec cgExp (ctxt : context) (Exp {exp_base; ty; _} : H.exp) :
           | GtOp -> Ll.Sgt
           | GeOp -> Ll.Sge 
           | _ -> raise NotImplemented (* TODO: throw exception *)
-          ) in 
+          ) 
+          in 
+          let isn = (
+          let tup = S.look (ctxt.locals, op_right) in 
+          let isString = (ty_to_llty ty == Ptr I8) in (match isString with (* TODO: skal ikke være ty, men left/rights type, but how to get that *)
+          | true -> let op_left_ins = Bitcast(Ptr I8, op_left, I64) in 
+                    let op_right_ins = Bitcast(Ptr I8, op_right, I64) in 
+                    let left_id = fresh "left" in
+                    let right_id = fresh "right" in 
+                    let add_left = B.add_insn (Some left_id, op_left_ins) in
+                    let add_right = B.add_insn (Some right_id, op_right_ins) in
+                    (B.seq_buildlets[add_left; add_right]);
+          | false -> 
+                    B.seq_buildlets[])) in
           let i = Ll.Icmp (cnd, Ll.I64, op_left, op_right) in (* TODO: should it be I1 or something? *)
           
           let newid = fresh "temp" in
@@ -137,14 +170,29 @@ let rec cgExp (ctxt : context) (Exp {exp_base; ty; _} : H.exp) :
           let new_op = Id newid in                    (* make operand to newid.... *)
           let bu = Ll.Zext (Ll.I1, new_op, Ll.I64) in (* from i1 to i61 of new_op=icmp,  *)        (* TODO: hvilken operand skal være her ? *)
           let c_insn = B.add_insn (Some newid2, bu) in (* add the "result" of bu to newid2  *)
-          let b_cmp = B.seq_buildlets[build_left; build_right; b_insn; c_insn] in 
+          let b_cmp = B.seq_buildlets[build_left; build_right; isn; b_insn; c_insn] in 
           (b_cmp, Ll.Id newid2)  (* newid2 have the result as i64 *)
         )
         )
   | H.CallExp {func; lvl_diff= 0; args} ->
       (* lvl_diff returned from the hoisting phase for Tiger Cub is always zero *)
-      raise NotImplemented
-  | H.SeqExp exps -> raise NotImplemented
+      (* let (f_od, f_decl) = List.find (fun (x, _) -> x func) ctxt.gdecls in Finds the func in the global declarations *)
+ 
+      let exps_build_op_list = List.map (fun x -> (* This func evaluate each arg, and returns a list of (type, operand)*)
+        let (build, op) = cgE x in 
+        (ty_to_llty ty, op)) args in 
+      
+      let call_insn = Call (ty_to_llty ty, Gid func, exps_build_op_list) in
+      let call_id = fresh "call" in
+      let call_added = B.add_insn (Some call_id, call_insn) in
+      let call_in_build = B.seq_buildlets [call_added] in
+      (call_in_build, Gid call_id)
+  | H.SeqExp exps -> 
+      let (fold_build, fold_op) = List.fold_left ( fun (acc_build, acc_ty) exp -> 
+        let (exp_build, exp_op) = cgE exp in 
+        let seq_exp = B.seq_buildlets [acc_build; exp_build] in 
+        (seq_exp, exp_op)) (B.seq_buildlets [], Null) exps in
+      (fold_build, fold_op) 
   | H.IfExp {test; thn; els= Some e} -> (* TODO: use the aiwf function *)
       (* Generate code for test *)
       let (guard_buildlet, guard_op) = cgE test in
@@ -309,9 +357,9 @@ let cgTigerMain ty body locals =
   let build_body, op = cgExp ctxt body in
   let tr =
     match ty with
-    | Ty.INT -> Ll.Ret (Ll.I64, Some op) (* TODO add types *)
+    | Ty.INT -> Ll.Ret (Ll.I64, Some op) (* TODO: add types *)
     | Ty.VOID -> Ll.Ret (Ll.Void, None)
-    (* | Ty.STRING -> Ll.Ret (Ll.Struct eehh, Some op) *)
+    | Ty.STRING -> Ll.Ret (Ll.Ptr I8, Some op) (* TODO: Jeg ændrede typen fra Struct til Ptr; this could be very wrong tho, kh Amalie*)
     | _ -> raise NotImplemented
   in
   let tigermain_builder = B.seq_buildlets [build_body; B.term_block tr] in
