@@ -12,6 +12,7 @@ module H = Habsyn
 module S = Symbol
 module Ty = Types
 module B = Cfgbuilder
+module O = Oper
 
 exception NotImplemented (* the final code should compile without this exception *)
 
@@ -38,11 +39,15 @@ let aiwf s i =
 
 (* --- Our selfmade helper functions --- *)
 
-(* let oper_typ (oper: Oper.oper) =
-   match oper with 
-   | (PlusOp | MinusOp | TimesOp | DivideOp | ExponentOp) -> ("bop", oper)
-   | (EqOp | NeqOp | LtOp | LeOp | GtOp | GeOp ) -> ("cnd", oper)
-   | _ -> raise NotImplemented *)
+let isArith (oper: O.oper) =
+   (match oper with 
+   | (PlusOp | MinusOp | TimesOp | DivideOp | ExponentOp) -> true
+   | (EqOp | NeqOp | LtOp | LeOp | GtOp | GeOp ) -> false
+   | _ -> false )
+
+let unpack_exp_to_exp_base_and_ty (Exp {exp_base; ty; _} : H.exp) =
+    (exp_base, ty)
+
 
 (* --- end of helper functions --- *)
 
@@ -81,7 +86,6 @@ let rec cgExp (ctxt : context) (Exp {exp_base; ty; _} : H.exp) :
       let str_arr_ty = Array (length_of_str, I8) in         (* [ n x i8] - this is a type*)
       let str_struct_ty = Struct ([I64; str_arr_ty]) in     (* { i64, [n x i8] } - this is a type *)
       let str_decl = GString s in 
-      let arr_decl = GArray [(str_arr_ty, str_decl)] in     (* This is a ginit with type from above*)
       let str_decl = GStruct [(I64, GInt length_of_str); (str_arr_ty, str_decl)] in (* TODO: type should be different I guess *)
       let new_gdecl = (str_struct_ty, str_decl) in  (* This is the first { ... } after gloabl *)
       ctxt.gdecls := (string_id, new_gdecl) :: !(ctxt.gdecls); (* TODO: How to append to existing context, tror det her virker *)
@@ -120,9 +124,135 @@ let rec cgExp (ctxt : context) (Exp {exp_base; ty; _} : H.exp) :
        
       (res, Null) *)
       (* raise NotImplemented *)
-  | H.OpExp {left; oper; right} ->
+  | H.OpExp {left; oper; right} -> (
       let build_right, op_right = cgE right in
-      let build_left, op_left = cgE left in (
+      let build_left, op_left = cgE left in 
+      let (_,typ) = unpack_exp_to_exp_base_and_ty left in 
+      let a = (match typ with 
+      | Ty.INT -> (
+        let aaa = (match oper with
+        | ExponentOp -> (
+          let call_isn = Call (I64, Gid(S.symbol "exponent"),[(I64, op_left); (I64, op_right)]) in 
+          let (expon_b, expon_op) = aiwf "exponent" call_isn in
+          (expon_b, expon_op))
+        | PlusOp | MinusOp | TimesOp | DivideOp | ExponentOp ->
+          (let bion = (match oper with
+          | PlusOp -> Ll.Add
+          | MinusOp -> Ll.Sub
+          | TimesOp -> Ll.Mul
+          | DivideOp -> Ll.SDiv (* TODO: Giver problemer med divison med 0 *)
+                                (* Hvis right er 0, så kald divisionByZero i runtime.c måske ? *)
+          | _ -> raise NotImplemented) in 
+          
+          let i = Ll.Binop (bion, Ll.I64, op_left, op_right) in
+          let newid = fresh "temp" in
+          let b_insn = B.add_insn (Some newid, i) in
+          let b_binop = B.seq_buildlets [build_left; build_right; b_insn] in
+          (b_binop, Ll.Id newid))
+        | EqOp | NeqOp | LtOp | LeOp | GtOp | GeOp -> (
+          let cnd = (match oper with 
+            | EqOp -> Ll.Eq      
+            | NeqOp -> Ll.Ne
+            | LtOp -> Ll.Slt
+            | LeOp -> Ll.Sle
+            | GtOp -> Ll.Sgt
+            | GeOp -> Ll.Sge 
+            | _ -> raise NotImplemented (* TODO: throw exception *)
+            ) in
+          (* let op_left_ins = Bitcast(Ptr I8, op_left, I64) in  *)
+          (* let op_right_ins = Bitcast(Ptr I8, op_right, I64) in  *)
+          (* let left_id = fresh "left" in
+          let right_id = fresh "right" in 
+          let add_left   = B.add_insn (Some left_id, op_left_ins) in
+          let add_right = B.add_insn (Some right_id, op_right_ins) in 
+          let isn      = (B.seq_buildlets[add_left; add_right]) in *)
+          let i = Ll.Icmp (cnd, Ll.I64, op_left, op_right) in (* TODO: should it be I1 or something? *)
+          
+          let newid = fresh "temp" in
+          let newid2 = fresh "temp" in
+          let b_insn = B.add_insn (Some newid, i) in  (* "save" cmp instr in newid  *)
+          let new_op = Id newid in                    (* make operand to newid.... *)
+          let bu = Ll.Zext (Ll.I1, new_op, Ll.I64) in (* from i1 to i61 of new_op=icmp,  *)        (* TODO: hvilken operand skal være her ? *)
+          let c_insn = B.add_insn (Some newid2, bu) in (* add the "result" of bu to newid2  *)
+          let b_cmp = B.seq_buildlets[build_left; build_right; b_insn; c_insn] in 
+          (b_cmp, Ll.Id newid2)  (* newid2 have the result as i64 *)
+        ) ) in aaa)
+
+        (* if we have int så kører vi normalt  *)
+        (*let fuck = if(oper = ExponentOp) 
+          then (
+            (* if exponent then deal 1 måde*)
+            let call_isn = Call (I64, Gid(S.symbol "exponent"),[(I64, op_left); (I64, op_right)]) in 
+            let (expon_b, expon_op) = aiwf "exponent" call_isn in
+            (expon_b, expon_op)
+          ) else if (isArith oper) then (
+            (* hvis arith deal på anden måde *)
+            let bion = (match oper with
+              | PlusOp -> Ll.Add
+              | MinusOp -> Ll.Sub
+              | TimesOp -> Ll.Mul
+              | DivideOp -> Ll.SDiv (* TODO: Giver problemer med divison med 0 *)
+                                    (* Hvis right er 0, så kald divisionByZero i runtime.c måske ? *)
+              | _ -> raise NotImplemented) in 
+              
+              let i = Ll.Binop (bion, Ll.I64, op_left, op_right) in
+              let newid = fresh "temp" in
+              let b_insn = B.add_insn (Some newid, i) in
+              let b_binop = B.seq_buildlets [build_left; build_right; b_insn] in
+              (b_binop, Ll.Id newid)
+          ) else (
+            (*hvis comp deal trejde måde*)
+            let cnd = (match oper with 
+            | EqOp -> Ll.Eq      
+            | NeqOp -> Ll.Ne
+            | LtOp -> Ll.Slt
+            | LeOp -> Ll.Sle
+            | GtOp -> Ll.Sgt
+            | GeOp -> Ll.Sge 
+            | _ -> raise NotImplemented (* TODO: throw exception *)
+            )  
+          in
+          let op_left_ins = Bitcast(Ptr I8, op_left, I64) in 
+          let op_right_ins = Bitcast(Ptr I8, op_right, I64) in 
+          let left_id = fresh "left" in
+          let right_id = fresh "right" in 
+          let add_left   = B.add_insn (Some left_id, op_left_ins) in
+          let add_right = B.add_insn (Some right_id, op_right_ins) in 
+          let isn      = (B.seq_buildlets[add_left; add_right]) in
+          let i = Ll.Icmp (cnd, Ll.I64, op_left, op_right) in (* TODO: should it be I1 or something? *)
+          
+          let newid = fresh "temp" in
+          let newid2 = fresh "temp" in
+          let b_insn = B.add_insn (Some newid, i) in  (* "save" cmp instr in newid  *)
+          let new_op = Id newid in                    (* make operand to newid.... *)
+          let bu = Ll.Zext (Ll.I1, new_op, Ll.I64) in (* from i1 to i61 of new_op=icmp,  *)        (* TODO: hvilken operand skal være her ? *)
+          let c_insn = B.add_insn (Some newid2, bu) in (* add the "result" of bu to newid2  *)
+          let b_cmp = B.seq_buildlets[build_left; build_right; isn; b_insn; c_insn] in 
+          (b_cmp, Ll.Id newid2)  (* newid2 have the result as i64 *)
+          )
+      )*)
+      | Ty.STRING -> (
+        (*hvis vi har string, så skal vi kalde de der string funktioner *)
+        let aa = (
+        let cnd = (match oper with 
+          | EqOp -> "stringEqual"      
+          | NeqOp -> "stringNotEq"
+          | LtOp -> "stringLess"
+          | LeOp -> "stringLessEq"
+          | GtOp -> "stringGreater"
+          | GeOp -> "stringGreaterEq"
+          | _ -> raise NotImplemented (* TODO: throw exception *)
+          ) in 
+        let cal = Call (I64, Gid (S.symbol cnd), [(Ptr I8,op_left); (Ptr I8, op_right)]) in  (*TODO is this a pointer???*)
+        let (ca_b, ca_op) = aiwf "stringCmp" cal in
+        let bu = B.seq_buildlets [build_left; build_right; ca_b] in
+        (bu, ca_op)) in aa 
+        )
+      | _ -> (raise NotLLVM0) 
+      ) in a 
+      )
+      (* in
+      (
         match oper with 
         | PlusOp | MinusOp | TimesOp | DivideOp | ExponentOp -> (
           let bion = (match oper with
@@ -130,7 +260,9 @@ let rec cgExp (ctxt : context) (Exp {exp_base; ty; _} : H.exp) :
           | MinusOp -> Ll.Sub
           | TimesOp -> Ll.Mul
           | DivideOp -> Ll.SDiv (* TODO: Giver problemer med divison med 0 *)
-          | ExponentOp -> raise NotImplemented (* TODO: Kobl den med funktionen i runtime.c *)
+          | ExponentOp -> bitca
+            let call_isn = Call (I64, Gid(S.symbol "exponent"),[(I64, op_left); (I64, op_right)]) in
+            raise NotImplemented (* TODO: Kobl den med funktionen i runtime.c *)
           | _ -> raise NotImplemented) 
         in (* hvad der skal ske afhænger af right operand, brug runtime.c *)
               let i = Ll.Binop (bion, Ll.I64, op_left, op_right) in
@@ -151,7 +283,7 @@ let rec cgExp (ctxt : context) (Exp {exp_base; ty; _} : H.exp) :
           ) 
           in 
           let isn = (
-          let tup = S.look (ctxt.locals, op_right) in 
+          (* let tup = S.look (ctxt.locals, op_right) in *)
           let isString = (ty_to_llty ty == Ptr I8) in (match isString with (* TODO: skal ikke være ty, men left/rights type, but how to get that *)
           | true -> let op_left_ins = Bitcast(Ptr I8, op_left, I64) in 
                     let op_right_ins = Bitcast(Ptr I8, op_right, I64) in 
@@ -173,20 +305,50 @@ let rec cgExp (ctxt : context) (Exp {exp_base; ty; _} : H.exp) :
           let b_cmp = B.seq_buildlets[build_left; build_right; isn; b_insn; c_insn] in 
           (b_cmp, Ll.Id newid2)  (* newid2 have the result as i64 *)
         )
-        )
+        ) *)
   | H.CallExp {func; lvl_diff= 0; args} ->
       (* lvl_diff returned from the hoisting phase for Tiger Cub is always zero *)
       (* let (f_od, f_decl) = List.find (fun (x, _) -> x func) ctxt.gdecls in Finds the func in the global declarations *)
  
-      let exps_build_op_list = List.map (fun x -> (* This func evaluate each arg, and returns a list of (type, operand)*)
+      (* let (exps_build_op_list) = List.map2 (fun x y-> (* This func evaluate each arg, and returns a list of (type, operand)*)
         let (build, op) = cgE x in 
-        (ty_to_llty ty, op)) args in 
+        let build_nw = B.seq_buildlets [y;build]  in
+        let (_, typ) = unpack_exp_to_exp_base_and_ty x in
+        ((ty_to_llty typ, op), build_nw)
+        ) args (B.seq_buildlets [])  in *)
       
-      let call_insn = Call (ty_to_llty ty, Gid func, exps_build_op_list) in
-      let call_id = fresh "call" in
-      let call_added = B.add_insn (Some call_id, call_insn) in
-      let call_in_build = B.seq_buildlets [call_added] in
-      (call_in_build, Gid call_id)
+      let (_, typs) = List.split (List.map unpack_exp_to_exp_base_and_ty args) in 
+      let (builds, ops) = List.split (List.map cgE args ) in 
+      let (typOps) = List.combine (List.map ty_to_llty typs) ops in 
+      let build = B.seq_buildlets builds in 
+
+      (*let (exps_build_op_list) = List.map (fun x -> (* This func evaluate each arg, and returns a list of (type, operand)*)
+        let (build, op) = cgE x in
+        let (_, typ) = unpack_exp_to_exp_base_and_ty x in
+        ((ty_to_llty typ, op))
+        ) args in *)
+      
+      (* let (exps, buildlet_list) = List.split exps_build_op_list in 
+      let fols = List.fold_left (fun (x) -> B.seq_buildlets [acc; x]) (B.seq_buildlets []) buildlet_list in *)
+      
+      (* TODO: handle if the function is a void *)
+
+      let stupid = (Ptr I8, Null) in (* Dummy arg ? *)
+      
+      let call_insn = Call (ty_to_llty ty, Gid func, stupid::typOps) in
+      let ret = 
+      (if ty_to_llty ty == Void then  
+       (let (aa_b) = (B.add_insn (None, call_insn)) in
+       let call_in_build = B.seq_buildlets [build; aa_b] in
+        (call_in_build, Null)
+       )
+      else (
+        let (call_build, call_op)  = aiwf "call" call_insn in  
+        let call_in_build = B.seq_buildlets [build; call_build] in
+        (call_in_build, call_op)) ) in 
+      ret  
+      
+      
   | H.SeqExp exps -> 
       let (fold_build, fold_op) = List.fold_left ( fun (acc_build, acc_ty) exp -> 
         let (exp_build, exp_op) = cgE exp in 

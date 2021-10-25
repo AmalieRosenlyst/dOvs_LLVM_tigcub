@@ -250,8 +250,13 @@ void tigerexit(void *static_link, int64_t code)
 
 int64_t exponent(int64_t base, int64_t expn)
 {
+  // dø stuff hvis expn er negativ, bortset fra -1 ?
   int64_t i;
-  for(i=0; i<expn; i++){
+  if (expn < -1 ) {
+    //fprintf(stderr, "Error: can't use " % PRId64 " as exponent.\n", expn);
+    exit(1);
+  }
+  for(i=1; i<=expn; i++){
     i = i*i;
   }
   // fprintf(stderr, "Error: exponent not yet implemented\n");
