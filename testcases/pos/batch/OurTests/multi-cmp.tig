@@ -1,0 +1,9 @@
+let 
+    var x: int := 3
+    var y: int := 0
+in 
+    if x & y
+        then x := 6
+    else x := 10;
+    x
+end

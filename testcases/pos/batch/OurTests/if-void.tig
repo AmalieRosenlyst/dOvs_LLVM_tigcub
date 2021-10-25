@@ -1,0 +1,5 @@
+let 
+    var x: int := 1
+in 
+    if (x) then (x:= 3) else (x:= 5)
+end 

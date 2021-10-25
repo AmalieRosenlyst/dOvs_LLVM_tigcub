@@ -1,0 +1,8 @@
+let
+    var x: int := 4
+    var a: string := "a"
+    var b: string := "b"
+in
+    if x then b:=concat(a,b) else b:= concat(b,a);
+    b
+end
