@@ -1,0 +1,125 @@
+(INT,
+  LetExp([
+  | VarDec(x,true,INT,
+  |   (INT,
+  |   | IntExp(2))),
+  | VarDec(y,true,INT,
+  |   (INT,
+  |   | IntExp(0))),
+  | VarDec(z,true,INT,
+  |   (INT,
+  |   | OpExp(MinusOp,
+  |   |   (INT,
+  |   |   | IntExp(0)),
+  |   |   (INT,
+  |   |   | IntExp(5)))))],
+  | (INT,
+  |   SeqExp[
+  |   | (VOID,
+  |   |   IfExp(
+  |   |   | (INT,
+  |   |   |   IfExp(
+  |   |   |   | (INT,
+  |   |   |   |   VarExp(
+  |   |   |   |   | (INT,
+  |   |   |   |   |   SimpleVar(x)))),
+  |   |   |   | (INT,
+  |   |   |   |   VarExp(
+  |   |   |   |   | (INT,
+  |   |   |   |   |   SimpleVar(z)))),
+  |   |   |   | (INT,
+  |   |   |   |   IntExp(0)))),
+  |   |   | (VOID,
+  |   |   |   AssignExp(
+  |   |   |   | (INT,
+  |   |   |   |   SimpleVar(y)),
+  |   |   |   | (INT,
+  |   |   |   |   IntExp(3)))),
+  |   |   | (VOID,
+  |   |   |   AssignExp(
+  |   |   |   | (INT,
+  |   |   |   |   SimpleVar(y)),
+  |   |   |   | (INT,
+  |   |   |   |   IntExp(4)))))),
+  |   | (INT,
+  |   |   IfExp(
+  |   |   | (INT,
+  |   |   |   IfExp(
+  |   |   |   | (INT,
+  |   |   |   |   VarExp(
+  |   |   |   |   | (INT,
+  |   |   |   |   |   SimpleVar(z)))),
+  |   |   |   | (INT,
+  |   |   |   |   IntExp(1)),
+  |   |   |   | (INT,
+  |   |   |   |   VarExp(
+  |   |   |   |   | (INT,
+  |   |   |   |   |   SimpleVar(y)))))),
+  |   |   | (INT,
+  |   |   |   VarExp(
+  |   |   |   | (INT,
+  |   |   |   |   SimpleVar(x)))),
+  |   |   | (INT,
+  |   |   |   VarExp(
+  |   |   |   | (INT,
+  |   |   |   |   SimpleVar(z)))))),
+  |   | (INT,
+  |   |   IfExp(
+  |   |   | (INT,
+  |   |   |   IfExp(
+  |   |   |   | (INT,
+  |   |   |   |   IfExp(
+  |   |   |   |   | (INT,
+  |   |   |   |   |   VarExp(
+  |   |   |   |   |   | (INT,
+  |   |   |   |   |   |   SimpleVar(z)))),
+  |   |   |   |   | (INT,
+  |   |   |   |   |   IntExp(1)),
+  |   |   |   |   | (INT,
+  |   |   |   |   |   VarExp(
+  |   |   |   |   |   | (INT,
+  |   |   |   |   |   |   SimpleVar(y)))))),
+  |   |   |   | (INT,
+  |   |   |   |   IntExp(1)),
+  |   |   |   | (INT,
+  |   |   |   |   VarExp(
+  |   |   |   |   | (INT,
+  |   |   |   |   |   SimpleVar(x)))))),
+  |   |   | (INT,
+  |   |   |   VarExp(
+  |   |   |   | (INT,
+  |   |   |   |   SimpleVar(x)))),
+  |   |   | (INT,
+  |   |   |   VarExp(
+  |   |   |   | (INT,
+  |   |   |   |   SimpleVar(y)))))),
+  |   | (INT,
+  |   |   IfExp(
+  |   |   | (INT,
+  |   |   |   IfExp(
+  |   |   |   | (INT,
+  |   |   |   |   IfExp(
+  |   |   |   |   | (INT,
+  |   |   |   |   |   VarExp(
+  |   |   |   |   |   | (INT,
+  |   |   |   |   |   |   SimpleVar(z)))),
+  |   |   |   |   | (INT,
+  |   |   |   |   |   VarExp(
+  |   |   |   |   |   | (INT,
+  |   |   |   |   |   |   SimpleVar(y)))),
+  |   |   |   |   | (INT,
+  |   |   |   |   |   IntExp(0)))),
+  |   |   |   | (INT,
+  |   |   |   |   VarExp(
+  |   |   |   |   | (INT,
+  |   |   |   |   |   SimpleVar(x)))),
+  |   |   |   | (INT,
+  |   |   |   |   IntExp(0)))),
+  |   |   | (INT,
+  |   |   |   VarExp(
+  |   |   |   | (INT,
+  |   |   |   |   SimpleVar(x)))),
+  |   |   | (INT,
+  |   |   |   VarExp(
+  |   |   |   | (INT,
+  |   |   |   |   SimpleVar(z))))))])))

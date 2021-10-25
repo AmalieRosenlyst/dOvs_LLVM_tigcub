@@ -1,0 +1,12 @@
+/*write a pos test*/
+let 
+    var x:int := 4
+    var y:int := 5
+    var z:int := 5
+    var a:string := "a"
+    var b:string := "b"
+in 
+    if(x) then y else z ;
+    if(y) then b:=concat(a, b) else b:= concat(b, a);
+    b
+end

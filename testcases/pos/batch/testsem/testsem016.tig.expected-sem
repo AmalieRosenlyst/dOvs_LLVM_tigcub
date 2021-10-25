@@ -1,0 +1,47 @@
+(VOID,
+  LetExp([
+  | VarDec(v,true,STRING,
+  |   (STRING,
+  |   | StringExp("6")))],
+  | (VOID,
+  |   SeqExp[
+  |   | (VOID,
+  |   |   CallExp(print,[
+  |   |   | (STRING,
+  |   |   |   VarExp(
+  |   |   |   | (STRING,
+  |   |   |   |   SimpleVar(v))))])),
+  |   | (VOID,
+  |   |   LetExp([
+  |   |   | VarDec(v,true,STRING,
+  |   |   |   (STRING,
+  |   |   |   | StringExp("7")))],
+  |   |   | (VOID,
+  |   |   |   CallExp(print,[
+  |   |   |   | (STRING,
+  |   |   |   |   VarExp(
+  |   |   |   |   | (STRING,
+  |   |   |   |   |   SimpleVar(v))))])))),
+  |   | (VOID,
+  |   |   CallExp(print,[
+  |   |   | (STRING,
+  |   |   |   VarExp(
+  |   |   |   | (STRING,
+  |   |   |   |   SimpleVar(v))))])),
+  |   | (VOID,
+  |   |   LetExp([
+  |   |   | VarDec(v,true,STRING,
+  |   |   |   (STRING,
+  |   |   |   | StringExp("8")))],
+  |   |   | (VOID,
+  |   |   |   CallExp(print,[
+  |   |   |   | (STRING,
+  |   |   |   |   VarExp(
+  |   |   |   |   | (STRING,
+  |   |   |   |   |   SimpleVar(v))))])))),
+  |   | (VOID,
+  |   |   CallExp(print,[
+  |   |   | (STRING,
+  |   |   |   VarExp(
+  |   |   |   | (STRING,
+  |   |   |   |   SimpleVar(v))))]))])))

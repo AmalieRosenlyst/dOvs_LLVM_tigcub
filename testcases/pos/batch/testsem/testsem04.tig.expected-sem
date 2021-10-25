@@ -1,0 +1,7 @@
+(VOID,
+  LetExp([
+  | VarDec(x,true,INT,
+  |   (INT,
+  |   | IntExp(4)))],
+  | (VOID,
+  |   SeqExp[])))

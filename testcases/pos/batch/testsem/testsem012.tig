@@ -1,0 +1,15 @@
+let
+    var x:int := 5
+    var x:int := 10
+    var y:int := 10
+    var z:string := "aaa"
+in
+    while x < 8 do (
+        y:= y+y;
+        x:=x+1;
+        z := concat(z, z)
+    );
+    if x>5 then x:=5+5 else x:=x/2 ;
+    if y<x then y:= 5+y else y:= 8+5 ;
+    ()
+end

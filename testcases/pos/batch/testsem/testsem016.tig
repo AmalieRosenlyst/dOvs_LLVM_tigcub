@@ -1,0 +1,7 @@
+let var v:string := "6"
+in print(v);
+let var v:string := "7" in print(v) end;
+print(v);
+let var v:string := "8" in print(v) end;
+print(v)
+end

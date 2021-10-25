@@ -1,0 +1,71 @@
+(STRING,
+  LetExp([
+  | VarDec(x,true,INT,
+  |   (INT,
+  |   | IntExp(4))),
+  | VarDec(y,true,INT,
+  |   (INT,
+  |   | IntExp(5))),
+  | VarDec(z,true,INT,
+  |   (INT,
+  |   | IntExp(5))),
+  | VarDec(a,true,STRING,
+  |   (STRING,
+  |   | StringExp("a"))),
+  | VarDec(b,true,STRING,
+  |   (STRING,
+  |   | StringExp("b")))],
+  | (STRING,
+  |   SeqExp[
+  |   | (INT,
+  |   |   IfExp(
+  |   |   | (INT,
+  |   |   |   VarExp(
+  |   |   |   | (INT,
+  |   |   |   |   SimpleVar(x)))),
+  |   |   | (INT,
+  |   |   |   VarExp(
+  |   |   |   | (INT,
+  |   |   |   |   SimpleVar(y)))),
+  |   |   | (INT,
+  |   |   |   VarExp(
+  |   |   |   | (INT,
+  |   |   |   |   SimpleVar(z)))))),
+  |   | (VOID,
+  |   |   IfExp(
+  |   |   | (INT,
+  |   |   |   VarExp(
+  |   |   |   | (INT,
+  |   |   |   |   SimpleVar(y)))),
+  |   |   | (VOID,
+  |   |   |   AssignExp(
+  |   |   |   | (STRING,
+  |   |   |   |   SimpleVar(b)),
+  |   |   |   | (STRING,
+  |   |   |   |   CallExp(concat,[
+  |   |   |   |   | (STRING,
+  |   |   |   |   |   VarExp(
+  |   |   |   |   |   | (STRING,
+  |   |   |   |   |   |   SimpleVar(a)))),
+  |   |   |   |   | (STRING,
+  |   |   |   |   |   VarExp(
+  |   |   |   |   |   | (STRING,
+  |   |   |   |   |   |   SimpleVar(b))))])))),
+  |   |   | (VOID,
+  |   |   |   AssignExp(
+  |   |   |   | (STRING,
+  |   |   |   |   SimpleVar(b)),
+  |   |   |   | (STRING,
+  |   |   |   |   CallExp(concat,[
+  |   |   |   |   | (STRING,
+  |   |   |   |   |   VarExp(
+  |   |   |   |   |   | (STRING,
+  |   |   |   |   |   |   SimpleVar(b)))),
+  |   |   |   |   | (STRING,
+  |   |   |   |   |   VarExp(
+  |   |   |   |   |   | (STRING,
+  |   |   |   |   |   |   SimpleVar(a))))])))))),
+  |   | (STRING,
+  |   |   VarExp(
+  |   |   | (STRING,
+  |   |   |   SimpleVar(b))))])))

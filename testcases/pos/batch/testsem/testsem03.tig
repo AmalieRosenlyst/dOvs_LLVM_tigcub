@@ -1,0 +1,21 @@
+let
+    var x:int := 2
+    var y:int := 0
+    var z:int := -5
+in
+    if x & z 
+        then y := 3 
+    else y := 4;
+
+    if z | y 
+        then x
+    else z;
+    
+    if z | y | x
+        then x
+    else y;
+
+    if z & y & x 
+        then x
+    else z
+end
