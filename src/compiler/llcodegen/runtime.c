@@ -253,9 +253,12 @@ int64_t exponent(int64_t base, int64_t expn)
   // dø stuff hvis expn er negativ, bortset fra -1 ?
   int64_t i = base;
   int64_t j;
-  if (expn < -1 ) {
+  if (expn < 0 ) {
     //fprintf(stderr, "Error: can't use " % PRId64 " as exponent.\n", expn);
     exit(1);
+  }
+  if (expn == 0){
+    return 1;
   }
   for(j=1; j<expn; j++){
     i = i*base;
