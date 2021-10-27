@@ -76,13 +76,6 @@ let rec cgExp (ctxt : context) (Exp {exp_base; ty; _} : H.exp) :
   | H.StringExp s ->
       let string_id = fresh "string" in
       let length_of_str = length s in
-      let arr_of_chars =
-        let rec string_to_list acc i =
-          if i < 0 then acc else string_to_list (s.[i] :: acc) (i - 1)
-        in
-        string_to_list [] (length_of_str - 1)
-      in
-      (* make actual list *)
       let str_arr_ty = Array (length_of_str, I8) in
       (* [ n x i8] - this is a type*)
       let str_struct_ty = Struct [I64; str_arr_ty] in
@@ -91,53 +84,22 @@ let rec cgExp (ctxt : context) (Exp {exp_base; ty; _} : H.exp) :
       let str_decl =
         GStruct [(I64, GInt length_of_str); (str_arr_ty, str_decl)]
       in
-      (* TODO: type should be different I guess *)
       let new_gdecl = (str_struct_ty, str_decl) in
       (* This is the first { ... } after gloabl *)
-      ctxt.gdecls := (string_id, new_gdecl) :: !(ctxt.gdecls) ;
-      (* TODO: How to append to existing context, tror det her virker *)
+      ctxt.gdecls := (string_id, new_gdecl) :: !(ctxt.gdecls);
       let str_op = Gid string_id in
       let ptr_bitc = Bitcast (Ptr str_struct_ty, str_op, ptr_i8) in
       let add_bc = B.add_insn (Some string_id, ptr_bitc) in
       let str_build = B.seq_buildlets [add_bc] in
       (str_build, Id string_id)
-      (* let alloc_build = B.seq_buildlets([alloc_str_isn]) in
-         let str_load = Load (I8, Gid s) in *)
-      (* TODO: rip *)
-      (* add instr to make it add  *)
-      (* find length of list *)
-      (* tilføj til globals i context *)
-      (* Convert fra {i64, [n x i8]}* til i8* vha. bitcast *)
-      (* let new_ginit = GString s in
-
-         let ar_init = GArray ([I8, new_ginit]) in
-         let str_init = GStruct ([I64, ar_init]) in
-
-         let new_gdecl = (I8, new_ginit) in
-         let new_gid = fresh "global" in (* This should not be done*)
-         let new_gop = Gid new_gid in
-
-         let extended = {ctxt with gdecls = (ref [new_gid, new_gdecl])} in (* TODO: Hvornår (og hvordan) fuck bruges man den her ? *)
-
-         let comment1 = Comment "Jeg er i string exp" in
-
-         (* let str_load = Load (I8, Gid new_gid) in
-         let temp_reg = fresh "temp" in *)
-         let add_load = B.add_insn (Some temp_reg, str_load) in (* bitcast *)
-
-         let add_com = B.add_insn (None, comment1) in
-         let res = B.seq_buildlets [add_com; add_load] in
-
-         (res, Null) *)
-      (* raise NotImplemented *)
   | H.OpExp {left; oper; right} ->
       let build_right, op_right = cgE right in
       let build_left, op_left = cgE left in
       let _, typ = unpack_exp_to_exp_base_and_ty right in
-      let a =
+      let res =
         match typ with
         | Ty.INT ->
-            let aaa =
+            let res_int =
               match oper with
               | ExponentOp ->
                   let call_isn =
@@ -158,7 +120,7 @@ let rec cgExp (ctxt : context) (Exp {exp_base; ty; _} : H.exp) :
                     | DivideOp ->
                         Ll.SDiv
                         (* TODO: Giver problemer med divison med 0 *)
-                        (* Hvis right er 0, så kald divisionByZero i runtime.c måske ? *)
+                        (* Hvis right er 0, så kald divisionByZero i runtime.c ? *)
                     | _ -> raise NotImplemented
                   in
                   let i = Ll.Binop (bion, Ll.I64, op_left, op_right) in
@@ -177,18 +139,9 @@ let rec cgExp (ctxt : context) (Exp {exp_base; ty; _} : H.exp) :
                     | LeOp -> Ll.Sle
                     | GtOp -> Ll.Sgt
                     | GeOp -> Ll.Sge
-                    | _ -> raise NotImplemented
-                    (* TODO: throw exception *)
+                    | _ -> raise NotImplemented (* Shouldn't happend *)
                   in
-                  (* let op_left_ins = Bitcast(Ptr I8, op_left, I64) in  *)
-                  (* let op_right_ins = Bitcast(Ptr I8, op_right, I64) in  *)
-                  (* let left_id = fresh "left" in
-                     let right_id = fresh "right" in
-                     let add_left   = B.add_insn (Some left_id, op_left_ins) in
-                     let add_right = B.add_insn (Some right_id, op_right_ins) in
-                     let isn      = (B.seq_buildlets[add_left; add_right]) in *)
                   let i = Ll.Icmp (cnd, Ll.I64, op_left, op_right) in
-                  (* TODO: should it be I1 or something? *)
                   let newid = fresh "temp" in
                   let newid2 = fresh "temp" in
                   let b_insn = B.add_insn (Some newid, i) in
@@ -197,7 +150,6 @@ let rec cgExp (ctxt : context) (Exp {exp_base; ty; _} : H.exp) :
                   (* make operand to newid.... *)
                   let bu = Ll.Zext (Ll.I1, new_op, Ll.I64) in
                   (* from i1 to i61 of new_op=icmp,  *)
-                  (* TODO: hvilken operand skal være her ? *)
                   let c_insn = B.add_insn (Some newid2, bu) in
                   (* add the "result" of bu to newid2  *)
                   let b_cmp =
@@ -206,63 +158,10 @@ let rec cgExp (ctxt : context) (Exp {exp_base; ty; _} : H.exp) :
                   (b_cmp, Ll.Id newid2)
               (* newid2 have the result as i64 *)
             in
-            aaa
-            (* if we have int så kører vi normalt  *)
-            (*let fuck = if(oper = ExponentOp)
-                  then (
-                    (* if exponent then deal 1 måde*)
-                    let call_isn = Call (I64, Gid(S.symbol "exponent"),[(I64, op_left); (I64, op_right)]) in
-                    let (expon_b, expon_op) = aiwf "exponent" call_isn in
-                    (expon_b, expon_op)
-                  ) else if (isArith oper) then (
-                    (* hvis arith deal på anden måde *)
-                    let bion = (match oper with
-                      | PlusOp -> Ll.Add
-                      | MinusOp -> Ll.Sub
-                      | TimesOp -> Ll.Mul
-                      | DivideOp -> Ll.SDiv (* TODO: Giver problemer med divison med 0 *)
-                                            (* Hvis right er 0, så kald divisionByZero i runtime.c måske ? *)
-                      | _ -> raise NotImplemented) in
-
-                      let i = Ll.Binop (bion, Ll.I64, op_left, op_right) in
-                      let newid = fresh "temp" in
-                      let b_insn = B.add_insn (Some newid, i) in
-                      let b_binop = B.seq_buildlets [build_left; build_right; b_insn] in
-                      (b_binop, Ll.Id newid)
-                  ) else (
-                    (*hvis comp deal trejde måde*)
-                    let cnd = (match oper with
-                    | EqOp -> Ll.Eq
-                    | NeqOp -> Ll.Ne
-                    | LtOp -> Ll.Slt
-                    | LeOp -> Ll.Sle
-                    | GtOp -> Ll.Sgt
-                    | GeOp -> Ll.Sge
-                    | _ -> raise NotImplemented (* TODO: throw exception *)
-                    )
-                  in
-                  let op_left_ins = Bitcast(Ptr I8, op_left, I64) in
-                  let op_right_ins = Bitcast(Ptr I8, op_right, I64) in
-                  let left_id = fresh "left" in
-                  let right_id = fresh "right" in
-                  let add_left   = B.add_insn (Some left_id, op_left_ins) in
-                  let add_right = B.add_insn (Some right_id, op_right_ins) in
-                  let isn      = (B.seq_buildlets[add_left; add_right]) in
-                  let i = Ll.Icmp (cnd, Ll.I64, op_left, op_right) in (* TODO: should it be I1 or something? *)
-
-                  let newid = fresh "temp" in
-                  let newid2 = fresh "temp" in
-                  let b_insn = B.add_insn (Some newid, i) in  (* "save" cmp instr in newid  *)
-                  let new_op = Id newid in                    (* make operand to newid.... *)
-                  let bu = Ll.Zext (Ll.I1, new_op, Ll.I64) in (* from i1 to i61 of new_op=icmp,  *)        (* TODO: hvilken operand skal være her ? *)
-                  let c_insn = B.add_insn (Some newid2, bu) in (* add the "result" of bu to newid2  *)
-                  let b_cmp = B.seq_buildlets[build_left; build_right; isn; b_insn; c_insn] in
-                  (b_cmp, Ll.Id newid2)  (* newid2 have the result as i64 *)
-                  )
-              )*)
+            res_int
         | Ty.STRING ->
             (*hvis vi har string, så skal vi kalde de der string funktioner *)
-            let aa =
+            let res_str =
               let cnd =
                 match oper with
                 | EqOp -> "stringEqual"
@@ -271,8 +170,7 @@ let rec cgExp (ctxt : context) (Exp {exp_base; ty; _} : H.exp) :
                 | LeOp -> "stringLessEq"
                 | GtOp -> "stringGreater"
                 | GeOp -> "stringGreaterEq"
-                | _ -> raise NotImplemented
-                (* TODO: throw exception *)
+                | _ -> raise NotImplemented (* Should not happend *)
               in
               let cal =
                 Call
@@ -285,91 +183,19 @@ let rec cgExp (ctxt : context) (Exp {exp_base; ty; _} : H.exp) :
               let bu = B.seq_buildlets [build_left; build_right; ca_b] in
               (bu, ca_op)
             in
-            aa
+            res_str
         | _ -> raise NotLLVM0
       in
-      a
-      (* in
-         (
-           match oper with
-           | PlusOp | MinusOp | TimesOp | DivideOp | ExponentOp -> (
-             let bion = (match oper with
-             | PlusOp -> Ll.Add
-             | MinusOp -> Ll.Sub
-             | TimesOp -> Ll.Mul
-             | DivideOp -> Ll.SDiv (* TODO: Giver problemer med divison med 0 *)
-             | ExponentOp -> bitca
-               let call_isn = Call (I64, Gid(S.symbol "exponent"),[(I64, op_left); (I64, op_right)]) in
-               raise NotImplemented (* TODO: Kobl den med funktionen i runtime.c *)
-             | _ -> raise NotImplemented)
-           in (* hvad der skal ske afhænger af right operand, brug runtime.c *)
-                 let i = Ll.Binop (bion, Ll.I64, op_left, op_right) in
-                 let newid = fresh "temp" in
-                 let b_insn = B.add_insn (Some newid, i) in
-                 let b_binop = B.seq_buildlets [build_left; build_right; b_insn] in
-                 (b_binop, Ll.Id newid)
-           )
-           | EqOp | NeqOp | LtOp | LeOp | GtOp | GeOp -> (
-             let cnd = (match oper with
-             | EqOp -> Ll.Eq
-             | NeqOp -> Ll.Ne
-             | LtOp -> Ll.Slt
-             | LeOp -> Ll.Sle
-             | GtOp -> Ll.Sgt
-             | GeOp -> Ll.Sge
-             | _ -> raise NotImplemented (* TODO: throw exception *)
-             )
-             in
-             let isn = (
-             (* let tup = S.look (ctxt.locals, op_right) in *)
-             let isString = (ty_to_llty ty == Ptr I8) in (match isString with (* TODO: skal ikke være ty, men left/rights type, but how to get that *)
-             | true -> let op_left_ins = Bitcast(Ptr I8, op_left, I64) in
-                       let op_right_ins = Bitcast(Ptr I8, op_right, I64) in
-                       let left_id = fresh "left" in
-                       let right_id = fresh "right" in
-                       let add_left = B.add_insn (Some left_id, op_left_ins) in
-                       let add_right = B.add_insn (Some right_id, op_right_ins) in
-                       (B.seq_buildlets[add_left; add_right]);
-             | false ->
-                       B.seq_buildlets[])) in
-             let i = Ll.Icmp (cnd, Ll.I64, op_left, op_right) in (* TODO: should it be I1 or something? *)
-
-             let newid = fresh "temp" in
-             let newid2 = fresh "temp" in
-             let b_insn = B.add_insn (Some newid, i) in  (* "save" cmp instr in newid  *)
-             let new_op = Id newid in                    (* make operand to newid.... *)
-             let bu = Ll.Zext (Ll.I1, new_op, Ll.I64) in (* from i1 to i61 of new_op=icmp,  *)        (* TODO: hvilken operand skal være her ? *)
-             let c_insn = B.add_insn (Some newid2, bu) in (* add the "result" of bu to newid2  *)
-             let b_cmp = B.seq_buildlets[build_left; build_right; isn; b_insn; c_insn] in
-             (b_cmp, Ll.Id newid2)  (* newid2 have the result as i64 *)
-           )
-           ) *)
+      res
   | H.CallExp {func; lvl_diff= 0; args} ->
       (* lvl_diff returned from the hoisting phase for Tiger Cub is always zero *)
-      (* let (f_od, f_decl) = List.find (fun (x, _) -> x func) ctxt.gdecls in Finds the func in the global declarations *)
-
-      (* let (exps_build_op_list) = List.map2 (fun x y-> (* This func evaluate each arg, and returns a list of (type, operand)*)
-         let (build, op) = cgE x in
-         let build_nw = B.seq_buildlets [y;build]  in
-         let (_, typ) = unpack_exp_to_exp_base_and_ty x in
-         ((ty_to_llty typ, op), build_nw)
-         ) args (B.seq_buildlets [])  in *)
       let _, typs =
         List.split (List.map unpack_exp_to_exp_base_and_ty args)
       in
       let builds, ops = List.split (List.map cgE args) in
       let typOps = List.combine (List.map ty_to_llty typs) ops in
       let build = B.seq_buildlets builds in
-      (*let (exps_build_op_list) = List.map (fun x -> (* This func evaluate each arg, and returns a list of (type, operand)*)
-        let (build, op) = cgE x in
-        let (_, typ) = unpack_exp_to_exp_base_and_ty x in
-        ((ty_to_llty typ, op))
-        ) args in *)
 
-      (* let (exps, buildlet_list) = List.split exps_build_op_list in
-         let fols = List.fold_left (fun (x) -> B.seq_buildlets [acc; x]) (B.seq_buildlets []) buildlet_list in *)
-
-      (* TODO: handle if the function is a void *)
       let stupid = (Ptr I8, Null) in
       (* Dummy arg ? *)
       let call_insn = Call (ty_to_llty ty, Gid func, stupid :: typOps) in
@@ -479,11 +305,6 @@ let rec cgExp (ctxt : context) (Exp {exp_base; ty; _} : H.exp) :
   | H.WhileExp {test; body} ->
       let test_buildlet, test_op = cgE test in
       let body_buildlet, _ = cgE body in
-      (* TODO: Body operand skal ikke bruges, eller ? *)
-
-      (*need to: branch on test to body or return
-        in body: do some computation, update som variables, do not alloc everytime
-      *)
       (*Make labels so we can jump *)
       let guard_lab = fresh "guard" in
       (*Where we test if test still holds*)
@@ -520,11 +341,6 @@ let rec cgExp (ctxt : context) (Exp {exp_base; ty; _} : H.exp) :
       let start_m = B.start_block merge_lab in
       (* make a block to end the while-Exp *)
       let while_buildet = B.seq_buildlets [loo_buildlet; start_m] in
-      (* TODO: Test den her med while.tig *)
-      (* load  *)
-      (* Branch on  *)
-      (* Jump to own label ? *)
-
       (* (composed_buildlet, op_res) *)
       (while_buildet, Null)
       (* returns VOID...  *)
@@ -568,21 +384,12 @@ let rec cgExp (ctxt : context) (Exp {exp_base; ty; _} : H.exp) :
           (H.Var {var_base= H.AccessVar (0, varname); ty= varty; pos})
       in
       let x_typ = ty_to_llty varty in
-      (* let x_ptr = varname in             *)
-      (* let x_ptr_op = Ll.Id x_ptr in    *)
-
-      (* let con_x = S.look(ctxt.locals, varname) in *)
-
       (* we want to store exp_op in the var *)
       let store_ins = Ll.Store (x_typ, exp_op, Id varname) in
       (* operand er ændret fra var_op til Id varname - Amalie*)
       let store_build = B.add_insn (None, store_ins) in
       let composed = B.seq_buildlets [var_build; exp_build; store_build] in
       (composed, Null)
-  (* );
-
-
-     raise NotImplemented *)
   (* the rest of the cases do not need handling in LLVM0/ Assignment 4 *)
   | _ -> raise NotLLVM0
 
@@ -619,11 +426,8 @@ let cgTigerMain ty body locals =
   let build_body, op = cgExp ctxt body in
   let tr =
     match ty with
-    | Ty.INT -> Ll.Ret (Ll.I64, Some op) (* TODO: add types *)
+    | Ty.INT -> Ll.Ret (Ll.I64, Some op)
     | Ty.VOID | Ty.STRING -> Ll.Ret (Ll.I64, Some (Ll.Const 0))
-    (* | Ty.STRING ->
-        Ll.Ret (Ll.Ptr I8, Some op) *)
-        (* TODO: Jeg ændrede typen fra Struct til Ptr; this could be very wrong tho, kh Amalie*)
     | _ -> raise NotImplemented
   in
   let tigermain_builder = B.seq_buildlets [build_body; B.term_block tr] in

@@ -147,6 +147,7 @@
   {"file": "pos/batch/OurTests/exp1.tig", "feature-sets": ["lex0", "lex1", "lex2", "llvm0", "par0", "par1", "par2", "sem0", "sem1", "sem2", "sem3", "xasm1", "xasm2", "xasm3"]},
   {"file": "pos/batch/OurTests/exp2.tig", "feature-sets": ["lex0", "lex1", "lex2", "llvm0", "par0", "par1", "par2", "sem0", "sem1", "sem2", "sem3", "xasm1", "xasm2", "xasm3"]},
   {"file": "pos/batch/OurTests/longIf.tig", "feature-sets": ["lex0", "lex1", "lex2", "llvm0", "par0", "par1", "par2", "sem0", "sem1", "sem2", "sem3", "xasm1", "xasm2", "xasm3"]},
+  {"file": "pos/batch/OurTests/if-string.tig", "feature-sets": ["lex0", "lex1", "lex2", "llvm0", "par0", "par1", "par2", "sem0", "sem1", "sem2", "sem3", "xasm1", "xasm2", "xasm3"]},
   {"file": "pos/batch/OurTests/multi-cmp.tig", "feature-sets": ["lex0", "lex1", "lex2", "llvm0", "par0", "par1", "par2", "sem0", "sem1", "sem2", "sem3", "xasm1", "xasm2", "xasm3"]}
 
 ]
